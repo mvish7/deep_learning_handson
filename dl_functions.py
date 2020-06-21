@@ -1,6 +1,9 @@
 import torch
 import torchvision
 import numpy as np
+from torchvision import transforms
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 
 def grad_descent(params, lr, batch_size):
@@ -105,3 +108,76 @@ def grad_descent(params, lr, batch_size):
     for param in params:
         param.data.sub_(lr*param.grad/batch_size)
         param.grad.data.zero_()
+
+
+def load_fashion_mnist(path, batch_size):
+    """
+    returns the torch dataloader for train and test dataset of FashionMNIST
+    :param path:
+    :param batch_size:
+    :return:
+    """
+    # define the transform
+    to_tensor = transforms.ToTensor()
+
+    # downloading dataset
+    mnist_train = torchvision.datasets.FashionMNIST(root=path, train=True, transform=to_tensor, download=True)
+    mnist_test = torchvision.datasets.FashionMNIST(root=path, train=False, transform=to_tensor, download=True)
+
+    # creating dataloader
+
+    train_loader = DataLoader(mnist_train, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(mnist_test, batch_size=batch_size, shuffle=True)
+
+    return train_loader, test_loader
+
+
+def relu(X):
+    return torch.max(X, torch.zeros_like(X))
+
+
+def get_fashion_mnist_labels(labels):
+
+    labels_list = ['t-shirt', 'trouser', 'pullover', 'dress', 'coat',
+                   'sandal', 'shirt', 'sneaker', 'bag', 'ankle boot']
+    return [labels_list[i] for i in labels]
+
+
+def show_fashion_mnist(images, labels):
+    """
+    visualizing function for image dataset
+    :param images:
+    :param labels:
+    :return:
+    """
+    # d2l.use_svg_display()
+    nrows = len(images)
+    fig, ax_arr = plt.subplots(1, nrows)
+    for f, img, lbl in zip(ax_arr.flatten(), images, labels):
+        f.imshow(img.reshape((28, 28)).numpy())
+        f.set_title(lbl)
+        f.axes.get_xaxis().set_visible(False)
+        f.axes.get_yaxis().set_visible(False)
+
+
+def l2_penalty(w):
+    return torch.sum(torch.mul(w, w))/2
+
+
+def dropout(X, drop_prob):
+    """
+    function implements (inverted) dropout
+    :param X:  tensor representing value of a layer
+    :param drop_prob:  hyperparameter P
+    :return:
+    """
+    assert 0 <= drop_prob <= 1
+
+    if drop_prob == 1:
+        return torch.zeros_like(X)
+
+    # mask = torch.tensor(np.random.binomial(1, drop_prob, X.shape), dtype=torch.float32)
+
+    mask = (torch.FloatTensor(X.shape).uniform_(0, 1) > drop_prob).float()
+    return mask * X / (1-drop_prob)
+
